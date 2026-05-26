@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}LeetCode Clone - Home{% endblock %}
+
+{% block content %}
+<div class="row align-items-center min-vh-75">
+    <div class="col-lg-6">
+        <h1 class="display-4 fw-bold mb-4">
+            Master Coding with 
+            <span class="text-warning">LeetCode Clone</span>
+        </h1>
+        <p class="lead mb-4">
+            Practice coding problems, improve your skills, and track your progress with our comprehensive platform. 
+            Solve problems from various categories and difficulty levels.
+        </p>
+        <div class="d-flex gap-3">
+            {% if not session.user_id %}
+            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-user-plus"></i> Get Started
+            </a>
+            <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </a>
+            {% else %}
+            <a href="{{ url_for('problems') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-list"></i> Browse Problems
+            </a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light btn-lg">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-lg-6 text-center">
+        <div class="card p-4">
+            <h3 class="mb-3">Features</h3>
+            <div class="row text-start">
+                <div class="col-md-6 mb-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-code text-warning me-3 fs-4"></i>
+                        <div>
+                            <h6 class="mb-1">Code Editor</h6>
+                            <small class="text-muted">Syntax highlighting & auto-completion</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-check-circle text-success me-3 fs-4"></i>
+                        <div>
+                            <h6 class="mb-1">Test Cases</h6>
+                            <small class="text-muted">Comprehensive testing</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-chart-line text-info me-3 fs-4"></i>
+                        <div>
+                            <h6 class="mb-1">Progress Tracking</h6>
+                            <small class="text-muted">Monitor your improvement</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-trophy text-warning me-3 fs-4"></i>
+                        <div>
+                            <h6 class="mb-1">Achievements</h6>
+                            <small class="text-muted">Earn badges & rewards</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">Why Choose LeetCode Clone?</h2>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <i class="fas fa-brain text-primary fs-1 mb-3"></i>
+                <h5 class="card-title">Practice Smart</h5>
+                <p class="card-text">
+                    Access a curated collection of coding problems designed to improve your algorithmic thinking and problem-solving skills.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <i class="fas fa-rocket text-success fs-1 mb-3"></i>
+                <h5 class="card-title">Learn Fast</h5>
+                <p class="card-text">
+                    Get instant feedback on your solutions with detailed explanations and performance metrics.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <i class="fas fa-users text-info fs-1 mb-3"></i>
+                <h5 class="card-title">Join Community</h5>
+                <p class="card-text">
+                    Connect with fellow developers, share solutions, and learn from the community.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

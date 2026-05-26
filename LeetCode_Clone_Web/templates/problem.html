@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block title %}{{ question.title }} - LeetCode Clone{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('problems') }}">Problems</a></li>
+                <li class="breadcrumb-item active">{{ question.title }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Problem Description -->
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-alt"></i> Problem Description
+                </h5>
+                <span class="badge bg-{{ 'success' if question.difficulty == 'Easy' else 'warning' if question.difficulty == 'Medium' else 'danger' }}">
+                    {{ question.difficulty }}
+                </span>
+            </div>
+            <div class="card-body">
+                <h4 class="mb-3">{{ question.title }}</h4>
+                <p class="text-muted mb-3">
+                    <i class="fas fa-tag"></i> {{ question.category }} | 
+                    <i class="fas fa-clock"></i> {{ question.time_limit }}ms | 
+                    <i class="fas fa-memory"></i> {{ question.memory_limit }}MB
+                </p>
+                <div class="problem-description">
+                    {{ question.description | safe }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Cases -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-vial"></i> Test Cases
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="testCases">
+                    {% for test_case in question.get_test_cases() %}
+                    <div class="test-case mb-3">
+                        <h6>Test Case {{ loop.index }}</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Input:</strong>
+                                <pre class="bg-dark text-light p-2 rounded mt-1">{{ test_case.input }}</pre>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Expected Output:</strong>
+                                <pre class="bg-dark text-light p-2 rounded mt-1">{{ test_case.output }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Code Editor -->
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-code"></i> Code Editor
+                </h5>
+                <div>
+                    <button class="btn btn-outline-primary btn-sm me-2" onclick="runCode()">
+                        <i class="fas fa-play"></i> Run
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="submitSolution()">
+                        <i class="fas fa-paper-plane"></i> Submit
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <textarea id="codeEditor">{{ question.get_test_cases()[0].input.split('\n')[0] if question.get_test_cases() else '' }}</textarea>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar"></i> Results
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="results">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-play-circle fa-2x mb-2"></i>
+                        <p>Click "Run" to test your solution or "Submit" to submit your answer.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let editor;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize CodeMirror
+    editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
+        mode: 'python',
+        theme: 'monokai',
+        lineNumbers: true,
+        autoCloseBrackets: true,
+        matchBrackets: true,
+        indentUnit: 4,
+        tabSize: 4,
+        lineWrapping: true,
+        extraKeys: {
+            "Tab": function(cm) {
+                cm.replaceSelection("    ", "end");
+            }
+        }
+    });
+
+    // Set default code template
+    const defaultCode = `def solution(input_data):
+    # Your solution here
+    # Example: return input_data
+    pass
+
+# Read input
+input_data = input()
+result = solution(input_data)
+print(result)`;
+
+    editor.setValue(defaultCode);
+});
+
+async function runCode() {
+    const code = editor.getValue();
+    const resultsDiv = document.getElementById('results');
+    
+    resultsDiv.innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin"></i> Running code...
+        </div>
+    `;
+    
+    try {
+        const response = await fetch('/api/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                question_id: {{ question.id }},
+                code: code
+            })
+        });
+        
+        const data = await response.json();
+        displayResults(data);
+    } catch (error) {
+        resultsDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> Error running code. Please try again.
+            </div>
+        `;
+    }
+}
+
+async function submitSolution() {
+    const code = editor.getValue();
+    const resultsDiv = document.getElementById('results');
+    
+    resultsDiv.innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin"></i> Submitting solution...
+        </div>
+    `;
+    
+    try {
+        const response = await fetch('/api/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                question_id: {{ question.id }},
+                code: code
+            })
+        });
+        
+        const data = await response.json();
+        displayResults(data, true);
+        
+        // Show success/error message
+        if (data.status === 'Accepted') {
+            showAlert('success', 'Congratulations! Your solution is correct!');
+        } else {
+            showAlert('warning', 'Your solution needs some adjustments. Check the results below.');
+        }
+    } catch (error) {
+        resultsDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> Error submitting solution. Please try again.
+            </div>
+        `;
+    }
+}
+
+function displayResults(data, isSubmission = false) {
+    const resultsDiv = document.getElementById('results');
+    
+    let html = '';
+    
+    if (data.status === 'Accepted') {
+        html += `
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i> 
+                <strong>Accepted!</strong> All test cases passed.
+            </div>
+        `;
+    } else {
+        html += `
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i> 
+                <strong>Not Accepted</strong> Some test cases failed.
+            </div>
+        `;
+    }
+    
+    if (data.results) {
+        html += '<h6>Test Case Results:</h6>';
+        data.results.forEach((result, index) => {
+            const statusClass = result.status === 'Accepted' ? 'success' : 'danger';
+            const statusIcon = result.status === 'Accepted' ? 'fa-check-circle' : 'fa-times-circle';
+            
+            html += `
+                <div class="test-case ${result.status === 'Accepted' ? 'passed' : 'failed'} mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">Test Case ${index + 1}</h6>
+                        <span class="badge bg-${statusClass}">
+                            <i class="fas ${statusIcon}"></i> ${result.status}
+                        </span>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Expected:</strong>
+                            <pre class="bg-dark text-light p-2 rounded mt-1">${result.expected}</pre>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Actual:</strong>
+                            <pre class="bg-dark text-light p-2 rounded mt-1">${result.actual || 'N/A'}</pre>
+                        </div>
+                    </div>
+                    ${result.error ? `
+                        <div class="mt-2">
+                            <strong>Error:</strong>
+                            <pre class="bg-danger text-light p-2 rounded mt-1">${result.error}</pre>
+                        </div>
+                    ` : ''}
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            Runtime: ${result.runtime ? result.runtime.toFixed(2) + 'ms' : 'N/A'}
+                        </small>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    
+    if (isSubmission) {
+        html += `
+            <div class="mt-3 p-3 bg-light rounded">
+                <h6>Submission Summary:</h6>
+                <p class="mb-1"><strong>Status:</strong> ${data.status}</p>
+                <p class="mb-1"><strong>Average Runtime:</strong> ${data.runtime ? data.runtime.toFixed(2) + 'ms' : 'N/A'}</p>
+                <p class="mb-0"><strong>Memory Usage:</strong> ${data.memory ? data.memory.toFixed(2) + 'MB' : 'N/A'}</p>
+            </div>
+        `;
+    }
+    
+    resultsDiv.innerHTML = html;
+}
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %} 

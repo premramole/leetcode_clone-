@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Generate Question</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2>Generate AI Coding Question</h2>
+
+  <label>Topic</label>
+  <input type="text" id="topic" placeholder="e.g., Arrays">
+
+  <label>Difficulty</label>
+  <select id="difficulty">
+    <option value="Easy">Easy</option>
+    <option value="Medium">Medium</option>
+    <option value="Hard">Hard</option>
+  </select>
+
+  <button onclick="generateQuestion()">Generate</button>
+
+  <hr>
+
+  <label>Title</label>
+  <input type="text" id="title">
+
+  <label>Description</label>
+  <textarea id="description" rows="3"></textarea>
+
+  <label>Category</label>
+  <input type="text" id="category">
+
+  <label>Time Limit (sec)</label>
+  <input type="number" id="time_limit">
+
+  <label>Memory Limit (MB)</label>
+  <input type="number" id="memory_limit">
+
+  <label>Test Cases (JSON format)</label>
+  <textarea id="test_cases" rows="5"></textarea>
+
+  <button onclick="saveQuestion()">Save to DB</button>
+</div>
+
+<script>
+  const API = "http://localhost:5000";
+
+  async function generateQuestion() {
+    const topic = document.getElementById("topic").value;
+    const difficulty = document.getElementById("difficulty").value;
+
+    try {
+      const res = await fetch(`${API}/generate_question`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic, difficulty })
+      });
+
+      const data = await res.json();
+      
+      if (!res.ok) {
+        alert(`Error: ${data.error || 'Failed to generate question'}`);
+        return;
+      }
+
+      try {
+        const q = JSON.parse(data.question);
+        document.getElementById("title").value = q.title || "";
+        document.getElementById("description").value = q.description || "";
+        document.getElementById("category").value = q.category || "";
+        document.getElementById("time_limit").value = q.time_limit || "";
+        document.getElementById("memory_limit").value = q.memory_limit || "";
+        document.getElementById("test_cases").value = JSON.stringify(q.test_cases || [], null, 2);
+      } catch (e) {
+        alert("Failed to parse AI response. Please try again.");
+        console.error("Parse error:", e);
+        console.error("Raw response:", data.question);
+      }
+    } catch (e) {
+      alert("Network error. Please check your connection and try again.");
+      console.error("Network error:", e);
+    }
+  }
+
+  async function saveQuestion() {
+    try {
+      // Validate required fields
+      const title = document.getElementById("title").value.trim();
+      const description = document.getElementById("description").value.trim();
+      const category = document.getElementById("category").value.trim();
+      const timeLimit = document.getElementById("time_limit").value;
+      const memoryLimit = document.getElementById("memory_limit").value;
+      const testCasesText = document.getElementById("test_cases").value.trim();
+
+      if (!title || !description || !category || !timeLimit || !memoryLimit || !testCasesText) {
+        alert("Please fill in all fields before saving.");
+        return;
+      }
+
+      // Parse test cases
+      let testCases;
+      try {
+        testCases = JSON.parse(testCasesText);
+        if (!Array.isArray(testCases)) {
+          throw new Error("Test cases must be an array");
+        }
+      } catch (e) {
+        alert("Invalid test cases format. Please ensure it's valid JSON array.");
+        return;
+      }
+
+      const data = {
+        title: title,
+        description: description,
+        difficulty: document.getElementById("difficulty").value,
+        category: category,
+        time_limit: parseInt(timeLimit),
+        memory_limit: parseInt(memoryLimit),
+        test_cases: testCases
+      };
+
+      const res = await fetch(`${API}/add_question`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      
+      const result = await res.json();
+      
+      if (!res.ok) {
+        alert(`Error: ${result.error || 'Failed to save question'}`);
+        return;
+      }
+      
+      alert(result.message || "Question saved successfully!");
+      
+      // Clear form after successful save
+      document.getElementById("title").value = "";
+      document.getElementById("description").value = "";
+      document.getElementById("category").value = "";
+      document.getElementById("time_limit").value = "";
+      document.getElementById("memory_limit").value = "";
+      document.getElementById("test_cases").value = "";
+      
+    } catch (e) {
+      alert("Error saving question. Please check your input and try again.");
+      console.error("Save error:", e);
+    }
+  }
+</script>
+</body>
+</html>

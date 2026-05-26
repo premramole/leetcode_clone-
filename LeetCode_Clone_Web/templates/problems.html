@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Problems - LeetCode Clone{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-list text-primary"></i> Problems
+        </h1>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="difficultyFilter" class="form-label">Difficulty</label>
+                        <select class="form-select" id="difficultyFilter">
+                            <option value="all">All Difficulties</option>
+                            <option value="Easy">Easy</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Hard">Hard</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="categoryFilter" class="form-label">Category</label>
+                        <select class="form-select" id="categoryFilter">
+                            <option value="all">All Categories</option>
+                            <option value="Array">Array</option>
+                            <option value="String">String</option>
+                            <option value="Linked List">Linked List</option>
+                            <option value="Stack">Stack</option>
+                            <option value="Queue">Queue</option>
+                            <option value="Tree">Tree</option>
+                            <option value="Graph">Graph</option>
+                            <option value="Dynamic Programming">Dynamic Programming</option>
+                            <option value="Math">Math</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="searchFilter" class="form-label">Search</label>
+                        <input type="text" class="form-control" id="searchFilter" placeholder="Search problems...">
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">&nbsp;</label>
+                        <button class="btn btn-primary w-100" onclick="loadProblems()">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Problems List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-code"></i> Problems List
+                </h5>
+                <span class="badge bg-primary" id="problemCount">0 problems</span>
+            </div>
+            <div class="card-body">
+                <div id="problemsList">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin"></i> Loading problems...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let allProblems = [];
+
+async function loadProblems() {
+    const difficulty = document.getElementById('difficultyFilter').value;
+    const category = document.getElementById('categoryFilter').value;
+    const search = document.getElementById('searchFilter').value;
+    
+    try {
+        let url = '/api/questions?';
+        if (difficulty !== 'all') url += `difficulty=${difficulty}&`;
+        if (category !== 'all') url += `category=${category}&`;
+        
+        const response = await fetch(url);
+        const problems = await response.json();
+        
+        // Filter by search term
+        const filteredProblems = problems.filter(problem => 
+            problem.title.toLowerCase().includes(search.toLowerCase()) ||
+            problem.category.toLowerCase().includes(search.toLowerCase())
+        );
+        
+        displayProblems(filteredProblems);
+    } catch (error) {
+        console.error('Error loading problems:', error);
+        document.getElementById('problemsList').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> Error loading problems. Please try again.
+            </div>
+        `;
+    }
+}
+
+function displayProblems(problems) {
+    const container = document.getElementById('problemsList');
+    const countElement = document.getElementById('problemCount');
+    
+    countElement.textContent = `${problems.length} problem${problems.length !== 1 ? 's' : ''}`;
+    
+    if (problems.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted">
+                <i class="fas fa-search fa-3x mb-3"></i>
+                <p>No problems found matching your criteria.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    problems.forEach(problem => {
+        const difficultyClass = `difficulty-${problem.difficulty.toLowerCase()}`;
+        const difficultyColor = {
+            'Easy': 'success',
+            'Medium': 'warning',
+            'Hard': 'danger'
+        }[problem.difficulty];
+        
+        html += `
+            <div class="border rounded p-3 mb-3 problem-item" style="cursor: pointer;" onclick="window.location.href='/problem/${problem.id}'">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h5 class="mb-1">${problem.title}</h5>
+                        <p class="text-muted mb-2">${problem.category}</p>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-${difficultyColor} difficulty-badge">
+                            ${problem.difficulty}
+                        </span>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        <i class="fas fa-clock"></i> Time Limit: ${problem.time_limit}ms
+                    </small>
+                    <small class="text-muted">
+                        <i class="fas fa-memory"></i> Memory: ${problem.memory_limit}MB
+                    </small>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    loadProblems();
+    
+    // Add event listeners for filters
+    document.getElementById('difficultyFilter').addEventListener('change', loadProblems);
+    document.getElementById('categoryFilter').addEventListener('change', loadProblems);
+    document.getElementById('searchFilter').addEventListener('input', debounce(loadProblems, 300));
+});
+
+// Debounce function for search
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+</script>
+{% endblock %} 

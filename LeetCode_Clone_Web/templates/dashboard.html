@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - LeetCode Clone{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-tachometer-alt text-primary"></i> Dashboard
+        </h1>
+        <p class="lead">Welcome back, {{ user.username }}!</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.solved_questions }}</div>
+            <div class="stats-label">Problems Solved</div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.total_submissions }}</div>
+            <div class="stats-label">Total Submissions</div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.accepted_submissions }}</div>
+            <div class="stats-label">Accepted Solutions</div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt text-warning"></i> Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('problems') }}" class="btn btn-primary w-100">
+                            <i class="fas fa-list"></i> Browse Problems
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('problems') }}?difficulty=Easy" class="btn btn-success w-100">
+                            <i class="fas fa-star"></i> Easy Problems
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('problems') }}?difficulty=Medium" class="btn btn-warning w-100">
+                            <i class="fas fa-star"></i> Medium Problems
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('problems') }}?difficulty=Hard" class="btn btn-danger w-100">
+                            <i class="fas fa-star"></i> Hard Problems
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history text-info"></i> Recent Submissions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="recentSubmissions">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-trophy text-warning"></i> Achievements
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="fas fa-medal text-warning me-3"></i>
+                    <div>
+                        <h6 class="mb-1">First Problem</h6>
+                        <small class="text-muted">Solve your first problem</small>
+                    </div>
+                    {% if stats.solved_questions > 0 %}
+                    <i class="fas fa-check-circle text-success ms-auto"></i>
+                    {% endif %}
+                </div>
+                
+                <div class="d-flex align-items-center mb-3">
+                    <i class="fas fa-fire text-danger me-3"></i>
+                    <div>
+                        <h6 class="mb-1">Streak Master</h6>
+                        <small class="text-muted">Solve 5 problems in a row</small>
+                    </div>
+                    {% if stats.solved_questions >= 5 %}
+                    <i class="fas fa-check-circle text-success ms-auto"></i>
+                    {% endif %}
+                </div>
+                
+                <div class="d-flex align-items-center mb-3">
+                    <i class="fas fa-crown text-warning me-3"></i>
+                    <div>
+                        <h6 class="mb-1">Problem Solver</h6>
+                        <small class="text-muted">Solve 10 problems</small>
+                    </div>
+                    {% if stats.solved_questions >= 10 %}
+                    <i class="fas fa-check-circle text-success ms-auto"></i>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Load recent submissions
+async function loadRecentSubmissions() {
+    try {
+        const response = await fetch('/api/stats');
+        const data = await response.json();
+        
+        const submissions = data.recent_submissions || [];
+        const container = document.getElementById('recentSubmissions');
+        
+        if (submissions.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted">
+                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                    <p>No submissions yet. Start solving problems!</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        submissions.slice(0, 5).forEach(submission => {
+            const statusClass = submission.status === 'Accepted' ? 'text-success' : 'text-danger';
+            const statusIcon = submission.status === 'Accepted' ? 'fa-check-circle' : 'fa-times-circle';
+            
+            html += `
+                <div class="d-flex align-items-center mb-3 p-3 border rounded">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">Problem #${submission.question_id}</h6>
+                        <small class="text-muted">${new Date(submission.timestamp * 1000).toLocaleDateString()}</small>
+                    </div>
+                    <div class="text-end">
+                        <div class="${statusClass}">
+                            <i class="fas ${statusIcon}"></i> ${submission.status}
+                        </div>
+                        <small class="text-muted">${submission.runtime.toFixed(2)}ms</small>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading recent submissions:', error);
+    }
+}
+
+// Load data when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadRecentSubmissions();
+});
+</script>
+{% endblock %} 
